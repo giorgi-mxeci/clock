@@ -11,13 +11,18 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
       - name: Build debug APK
         run: |
+          S=$(find . -name settings.gradle.kts -not -path './.git/*' | head -1)
+          if [ -z "$S" ]; then echo "settings.gradle.kts not found. Files in repo:"; find . -not -path './.git/*' | head -50; exit 1; fi
+          cd "$(dirname "$S")"
           rm -f local.properties
-          chmod +x gradlew
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          ./gradlew assembleDebug --no-daemon
+          if [ -f gradlew ]; then chmod +x gradlew; ./gradlew assembleDebug --no-daemon; else gradle assembleDebug --no-daemon; fi
       - uses: actions/upload-artifact@v4
         with:
           name: BlueGlassClock-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: "**/app-debug.apk"
